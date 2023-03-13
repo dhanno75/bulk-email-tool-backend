@@ -74,7 +74,7 @@ export const emailData = async (req, res, next) => {
     .aggregate([
       {
         $match: {
-          loggedInUserEmail: "p-dhananjay@outlook.com",
+          loggedInUserEmail: currentUser,
         },
       },
       {
@@ -99,5 +99,6 @@ export const emailData = async (req, res, next) => {
   res.status(200).json({
     status: "success",
     data: emailsByUser,
+    user: currentUser,
   });
 };
