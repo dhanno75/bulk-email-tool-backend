@@ -29,7 +29,7 @@ export const sendBulkEmails = async (req, res, next) => {
       return {
         emailTo: el,
         loggedInUserEmail: req.user.email,
-        createdAt: new Date(),
+        createdAt: new Date(Date.now()),
       };
     });
 
@@ -74,7 +74,22 @@ export const emailData = async (req, res, next) => {
     .aggregate([
       {
         $match: {
-          loggedInUserEmail: currentUser,
+          loggedInUserEmail: "p-dhananjay@outlook.com",
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $month: "$createdAt",
+          },
+          epm: {
+            $sum: 1,
+          },
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
         },
       },
     ])
