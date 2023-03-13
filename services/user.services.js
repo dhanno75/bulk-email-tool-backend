@@ -124,7 +124,7 @@ export const forgotPassword = async (req, res, next) => {
     .collection("users")
     .updateOne({ _id: user._id }, { $set: { passwordResetToken } });
 
-  const resetUrl = `${req.protocol}:https://the-bulk-email-sender.vercel.app/resetPassword/${resetToken}`;
+  const resetUrl = `https://the-bulk-email-sender.vercel.app/resetPassword/${resetToken}`;
 
   const message = `Forgot your password? Click on this link to submit a new request to reset your password to: ${resetUrl} .\nIf you didn't forget your password, please ignore this email!`;
 
