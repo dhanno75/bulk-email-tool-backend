@@ -4,10 +4,6 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendEmail, sendVerificationEmail } from "../utils/email.js";
 import { ObjectId } from "mongodb";
-import emailValidator from "deep-email-validator";
-import twofactor from "node-2fa";
-import { v4 as uuidv4 } from "uuid";
-import { token } from "morgan";
 
 // HASHING THE PASSWORD
 const generatePassword = async (password) => {

@@ -17,13 +17,11 @@
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "deep-email-validator": "^0.1.21",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
     "mongodb": "^4.13.0",
     "morgan": "^1.10.0",
-    "node-2fa": "^2.0.3",
     "nodemailer": "^6.9.1"
   },
   "devDependencies": {
