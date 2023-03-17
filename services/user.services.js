@@ -2,9 +2,12 @@ import { client } from "../index.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { sendEmail } from "../utils/email.js";
+import { sendEmail, sendVerificationEmail } from "../utils/email.js";
 import { ObjectId } from "mongodb";
 import emailValidator from "deep-email-validator";
+import twofactor from "node-2fa";
+import { v4 as uuidv4 } from "uuid";
+import { token } from "morgan";
 
 // HASHING THE PASSWORD
 const generatePassword = async (password) => {
@@ -47,12 +50,118 @@ export const signup = async (req, res, next) => {
       company,
       phone,
       passwordResetToken: "",
+      verified: false,
     });
+
+    // Create random token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    // Hashing the token
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(verificationToken)
+      .digest("hex");
+
+    // const resetUrl = `${req.protocol}://localhost:3000/verification/${newUser.insertedId}/${verificationToken}`;
+    const resetUrl = `https://the-bulk-email-sender.vercel.app/verification/${newUser.insertedId}/${verificationToken}`;
+
+    const message = `Verify your email address to complete the signup into your account. This ${resetUrl} link expires in 6 hours`;
+
+    try {
+      await sendVerificationEmail({
+        email,
+        subject: "Your email verification link",
+        message,
+      });
+
+      const userVerification = await client
+        .db("emailtool")
+        .collection("verification")
+        .insertOne({
+          userId: newUser.insertedId,
+          uniqueString: hashedToken,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 21600000,
+        });
+
+      res.status(200).json({
+        message: "success",
+        status: "Verification link sent to the user's email successfully",
+        data: userVerification,
+        user: newUser,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        status: "fail",
+        message:
+          "There was an error sending the email. Please try again later.",
+      });
+    }
+  }
+};
+
+// SIGNUP FINISH
+export const signupFinish = async (req, res, next) => {
+  let { userId, uniqueString } = req.params;
+
+  const userExists = await client
+    .db("emailtool")
+    .collection("verification")
+    .findOne({ userId: ObjectId(userId) });
+
+  if (!userExists) {
+    res.status(404).json({
+      status: "fail",
+      message: "There is no user with this id",
+    });
+  }
+
+  const expiresAt = userExists.expiresAt;
+  const hashString = userExists.uniqueString;
+
+  if (expiresAt < Date.now()) {
+    await client
+      .db("emailtool")
+      .collection("verification")
+      .deleteOne({ _id: userExists._id });
+
+    await client
+      .db("emailtool")
+      .collection("users")
+      .deleteOne({ _id: userExists._id });
+
+    res.status(400).json({
+      status: "fail",
+      message: "The link has expired, please login again",
+    });
+  }
+
+  const hashedString = crypto
+    .createHash("sha256")
+    .update(uniqueString)
+    .digest("hex");
+
+  // Finding the user using the hashedString. If user found then the uniqueString matches
+
+  const hashedUser = await client
+    .db("emailtool")
+    .collection("verification")
+    .findOne({ uniqueString: hashedString });
+
+  if (!hashedUser) {
+    res.status(404).json({
+      status: "fail",
+      message: "The link is invalid",
+    });
+  } else {
+    await client
+      .db("emailtool")
+      .collection("users")
+      .updateOne({ _id: hashedUser.userId }, { $set: { verified: true } });
 
     res.status(200).json({
       message: "success",
-      status: "User signedup successfully",
-      data: newUser,
+      status: "Signed Up Successfully!",
     });
   }
 };
@@ -60,7 +169,7 @@ export const signup = async (req, res, next) => {
 // lOGIN
 export const login = async (req, res, next) => {
   const { email, password } = req.body;
-  console.log(req.body);
+
   // Check if user exists or not
   const user = await client
     .db("emailtool")
@@ -162,7 +271,6 @@ export const forgotPassword = async (req, res, next) => {
 
 // RESET PASSWORD
 export const resetPassword = async (req, res, next) => {
-  console.log(req.params.token);
   const hashedToken = crypto
     .createHash("sha256")
     .update(req.params.token)
@@ -214,8 +322,7 @@ export const emails = async (req, res, next) => {
   });
 };
 
-// PROTECT
-
+// AUTH
 export const auth = async (req, res, next) => {
   try {
     const token = req.header("token");
@@ -237,36 +344,35 @@ export const auth = async (req, res, next) => {
     req.user = currentUser;
     next();
   } catch (err) {
-    console.log(err);
     res.status(401).send({ message: err.message });
   }
 };
 
-export const protect = async (req, res, next) => {
-  let token;
+// export const protect = async (req, res, next) => {
+//   let token;
 
-  if (req.headers.token && req.headers.authorization.startsWith("Bearer")) {
-    token = req.headers.authorization.split(" ")[1];
-  }
+//   if (req.headers.token && req.headers.authorization.startsWith("Bearer")) {
+//     token = req.headers.authorization.split(" ")[1];
+//   }
 
-  if (!token) {
-    res.status(400).send({ message: "No token found" });
-  }
+//   if (!token) {
+//     res.status(400).send({ message: "No token found" });
+//   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+//   const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-  const currentUser = await client
-    .db("emailtool")
-    .collection("users")
-    .findOne({ _id: ObjectId(decoded.id) });
+//   const currentUser = await client
+//     .db("emailtool")
+//     .collection("users")
+//     .findOne({ _id: ObjectId(decoded.id) });
 
-  if (!currentUser) {
-    res.status(401).json({
-      status: "fail",
-      message: "The user belonging to the token does not exist",
-    });
-  }
+//   if (!currentUser) {
+//     res.status(401).json({
+//       status: "fail",
+//       message: "The user belonging to the token does not exist",
+//     });
+//   }
 
-  req.user = currentUser;
-  next();
-};
+//   req.user = currentUser;
+//   next();
+// };

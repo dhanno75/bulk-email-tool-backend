@@ -7,15 +7,15 @@ import {
   resetPassword,
   emails,
   getAllUsers,
-  protect,
   auth,
+  signupFinish,
 } from "../services/user.services.js";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   const data = req.body;
-  console.log(data);
+
   const users = await client
     .db("emailtool")
     .collection("users")
@@ -27,8 +27,7 @@ router.post("/", async (req, res) => {
   });
 });
 
-// router.get("/allUsers", allUsers);
-router.get("/allUsers", protect, async (req, res) => {
+router.get("/allUsers", auth, async (req, res) => {
   const users = await getAllUsers();
 
   res.status(200).json({
@@ -38,6 +37,8 @@ router.get("/allUsers", protect, async (req, res) => {
 });
 
 router.post("/signup", signup);
+
+router.get("/verify/:userId/:uniqueString", signupFinish);
 
 router.post("/login", login);
 

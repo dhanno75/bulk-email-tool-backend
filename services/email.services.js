@@ -1,21 +1,8 @@
 import { client } from "../index.js";
 import { sendEmails } from "../utils/email.js";
-import { ObjectId } from "mongodb";
 
 export const sendBulkEmails = async (req, res, next) => {
-  // const emails = await client
-  //   .db("emailtool")
-  //   .collection("email")
-  //   .aggregate([
-  //     {
-  //       $match: {
-  //         userEmail: req.user.email,
-  //       },
-  //     },
-  //   ])
-  //   .toArray();
   const emails = req.body.to;
-  console.log(req.body);
 
   try {
     await sendEmails({
@@ -51,21 +38,6 @@ export const sendBulkEmails = async (req, res, next) => {
 };
 
 export const emailData = async (req, res, next) => {
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
   const currentUser = req.user.email;
 
   const emailsByUser = await client
@@ -94,7 +66,6 @@ export const emailData = async (req, res, next) => {
       },
     ])
     .toArray();
-  // console.log(months[emailsByUser[0].createdAt.getMonth()]);
 
   res.status(200).json({
     status: "success",
