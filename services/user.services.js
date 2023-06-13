@@ -349,32 +349,3 @@ export const auth = async (req, res, next) => {
     res.status(401).send({ message: err.message });
   }
 };
-
-// export const protect = async (req, res, next) => {
-//   let token;
-
-//   if (req.headers.token && req.headers.authorization.startsWith("Bearer")) {
-//     token = req.headers.authorization.split(" ")[1];
-//   }
-
-//   if (!token) {
-//     res.status(400).send({ message: "No token found" });
-//   }
-
-//   const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-
-//   const currentUser = await client
-//     .db("emailtool")
-//     .collection("users")
-//     .findOne({ _id: ObjectId(decoded.id) });
-
-//   if (!currentUser) {
-//     res.status(401).json({
-//       status: "fail",
-//       message: "The user belonging to the token does not exist",
-//     });
-//   }
-
-//   req.user = currentUser;
-//   next();
-// };
