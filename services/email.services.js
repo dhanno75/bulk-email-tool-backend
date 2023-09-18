@@ -24,7 +24,7 @@ export const sendBulkEmails = async (req, res, next) => {
       .db("emailtool")
       .collection("email")
       .insertMany(emailList);
-
+    console.log(data);
     res.status(200).json({
       status: "success",
       message: "Emails sent successfully",
